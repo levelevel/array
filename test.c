@@ -4,10 +4,24 @@
 #include <assert.h>
 #include "array.h"
 
+//CPU時間とメモリを表示
+#include <sys/time.h>
+#include <sys/resource.h>
+void print_usage() {
+#ifdef __linux__
+    struct rusage ru;
+    getrusage(RUSAGE_SELF, &ru);
+    printf("User:   %ld.%03ld sec\n", ru.ru_utime.tv_sec, ru.ru_utime.tv_usec/1000);
+    printf("Sys:    %ld.%03ld sec\n", ru.ru_stime.tv_sec, ru.ru_stime.tv_usec/1000);
+    printf("Memory: %ld MB\n", ru.ru_maxrss/1024);
+#endif
+}
+
 static char DATA1[] = "data1";
 static char DATA2[] = "data2";
 static char DATA3[] = "data3";
 
+//機能テスト
 void test_array(void) {
     array_t *array, *array2;
 
@@ -66,24 +80,58 @@ void test_array(void) {
     set_array_size(array, 15);
     assert(num_array(array)==15);
     assert(get_array(array, 10)==DATA1);
-    //assert(get_array(array, 20)==DATA2);
+    //assert(get_array(array, 20)==DATA2);//Eror
     free_array(array);
 
-#define SIZE 10000000
+    //サイズ固定
     array = new_array(0);
-    for (int i=0; i<SIZE; i++) {
+    put_array(array, 9, NULL);
+    assert(array->num==10);
+    assert(array->capacity==16);
+    fix_array_size(array);
+    assert(array->size_fixed);
+    assert(array->num==array->capacity);
+    put_array(array, 9, NULL);
+    //put_array(array, 10, NULL);//Error
+    //pop_array(array);//Error
+    //push_array(array, NULL);//Error
+
+    //サイズ固定解除
+    unfix_array_size(array);
+    put_array(array, 10, NULL);
+    pop_array(array);
+    push_array(array, NULL);
+    assert(array->num==11);
+    free_array(array);
+
+    printf("== Functional Test: OK\n");
+}
+
+//性能テスト
+void test_array_speed(long size) {
+    printf("== Speed Test: n=%ld\n", size);
+    int psize = size/2;
+    array_t *array = new_array(0);
+
+    for (int i=0; i<size; i++) {
         put_array(array, i, NULL);
     }
-    for (int i=0; i<SIZE/2; i++) {
+    for (int i=0; i<psize; i++) {
         pop_array(array);
     }
-    for (int i=0; i<SIZE/2; i++) {
+    for (int i=0; i<psize; i++) {
         push_array(array, NULL);
     }
-    assert(num_array(array)==SIZE);
+    assert(num_array(array)==size);
+
     free_array(array);
+
+    //結果表示
+    print_usage();
 }
 
 int main(int argc, char **argv) {
+    printf("Start Test\n");
     test_array();
+    test_array_speed(200*1000*1000);
 }

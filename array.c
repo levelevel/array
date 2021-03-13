@@ -11,8 +11,10 @@
 array_t *new_array(int size) {
     assert(size>=0);
     array_t *array = calloc(1, sizeof(array_t));
+    assert(array);
     array->capacity = size?size:ARRAY_INIT_SIZE;
     array->buckets = calloc(array->capacity, sizeof(void*));
+    assert(array->buckets);
     return array;
 }
 
@@ -32,16 +34,13 @@ int num_array(const array_t *array) {
 void set_array_size(array_t *array, int size) {
     assert(array);
     assert(size>=0);
-    if (size>=array->capacity) {    //buckets拡張時は拡張分を0クリアする
-        int new_cap = array->capacity;
-        while (size>=new_cap) new_cap *= ARRAY_GROW_FACTOR;
-        array->buckets = realloc(array->buckets, new_cap*sizeof(void*));
-        memset(array->buckets+array->capacity, 0x00, (new_cap-array->capacity)*sizeof(void*));
-        array->capacity = new_cap;
-    } else if (size<array->num) {   //サイズ縮小時は縮小した分を0クリアする
-        memset(array->buckets+size, 0x00, (array->num-size)*sizeof(void*));
-    }
     array->num = size;
+    array->buckets = realloc(array->buckets, size*sizeof(void*));
+    assert(array->buckets);
+    if (size>array->capacity) {
+        memset(array->buckets+array->capacity, 0x00, size-array->capacity);
+    }
+    array->capacity = size;
 }
 
 //アレイのidx番目にデータを格納する。アレイのサイズは自動的に拡張される。
@@ -50,9 +49,11 @@ void put_array(array_t *array, int idx, void *data) {
     assert(array);
     assert(idx>=0);
     if (idx>=array->capacity) {     //buckets拡張時は拡張分を0クリアする
+        assert(!array->size_fixed);
         int new_cap = array->capacity;
         while (idx>=new_cap) new_cap *= ARRAY_GROW_FACTOR;
         array->buckets = realloc(array->buckets, new_cap*sizeof(void*));
+        assert(array->buckets);
         memset(array->buckets+array->capacity, 0x00, (new_cap-array->capacity)*sizeof(void*));
         array->capacity = new_cap;
     }
@@ -81,6 +82,7 @@ void del_array(array_t *array, int idx) {
 //アレイの最後にデータを1個追加する。アレイのサイズは1増える。
 void push_array(array_t *array, void *data) {
     assert(array);
+    assert(!array->size_fixed);
     put_array(array, array->num, data);
 }
 
@@ -88,6 +90,7 @@ void push_array(array_t *array, void *data) {
 void *pop_array(array_t *array) {
     assert(array);
     assert(array->num>0);
+    assert(!array->size_fixed);
     void *data = array->buckets[--array->num];
     array->buckets[array->num] = NULL;
     return data;
@@ -101,4 +104,12 @@ array_t *dup_array(array_t *array) {
     new->num = array->num;
     memcpy(new->buckets, array->buckets, array->num*sizeof(void*));
     return new;
+}
+
+//配列サイズを固定する。
+//以降、配列サイズを変更するアクセス（push_array/pop_array等）はエラーとなる。
+void fix_array_size(array_t *array) {
+    array->size_fixed = 1;
+    array->buckets = realloc(array->buckets, array->num*sizeof(void*));
+    array->capacity = array->num;
 }

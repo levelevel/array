@@ -2,22 +2,15 @@
 //
 //## 機能
 //- データ：任意のポインタ
-//- 追加・削除・複製・push・pop
+//- 追加・削除・複製・push・pop・サイズ指定・サイズ固定
 
 //ポインタ版動的配列
 typedef struct array {
     int num;
+    int size_fixed; //配列サイズ固定済み
     int capacity;
     void **buckets;
 } array_t;
-
-//int版動的配列
-typedef struct iarray {
-    int num;
-    int capacity;
-    int *buckets;
-} iarray_t;
-
 
 //アレイをアロケートする。
 array_t *new_array(int size);
@@ -48,16 +41,12 @@ void push_array(array_t *array, void *data);
 void *pop_array(array_t *array);
 
 //アレイを複製する。
+//複製されたアレイの内部データは必要最低限分が確保される。
 array_t *dup_array(array_t *array);
 
+//配列サイズを固定する。
+//以降、配列サイズを変更するアクセス（push_array/pop_array等）はエラーとなる。
+void fix_array_size(array_t *array);
 
-//データがint版（未実装）
-iarray_t *new_iarray(int size);
-void free_iarray(iarray_t *array);
-int num_iarray(const iarray_t *array);
-void put_iarray(iarray_t *array, int idx, int data);
-int get_iarray(const iarray_t *array, int idx);
-void del_iarray(iarray_t *array, int idx);
-void push_iarray(iarray_t *array, int data);
-int pop_iarray(iarray_t *array);
-iarray_t *dup_iarray(iarray_t *array);
+//配列サイズ固定を解除する。
+#define unfix_array_size(array) (array)->size_fixed=0
