@@ -7,7 +7,7 @@
 //CPU時間とメモリを表示
 #include <sys/time.h>
 #include <sys/resource.h>
-void print_usage() {
+void print_usage(void) {
 #ifdef __linux__
     struct rusage ru;
     getrusage(RUSAGE_SELF, &ru);
@@ -83,27 +83,6 @@ void test_array(void) {
     //assert(get_array(array, 20)==DATA2);//Eror
     free_array(array);
 
-    //サイズ固定
-    array = new_array(0);
-    put_array(array, 9, NULL);
-    assert(array->num==10);
-    assert(array->capacity==16);
-    fix_array_size(array);
-    assert(array->size_fixed);
-    assert(array->num==array->capacity);
-    put_array(array, 9, NULL);
-    //put_array(array, 10, NULL);//Error
-    //pop_array(array);//Error
-    //push_array(array, NULL);//Error
-
-    //サイズ固定解除
-    unfix_array_size(array);
-    put_array(array, 10, NULL);
-    pop_array(array);
-    push_array(array, NULL);
-    assert(array->num==11);
-    free_array(array);
-
     printf("== Functional Test: OK\n");
 }
 
@@ -130,7 +109,7 @@ void test_array_speed(long size) {
     print_usage();
 }
 
-int main(int argc, char **argv) {
+int main(void) {
     printf("Start Test\n");
     test_array();
     test_array_speed(200*1000*1000);
